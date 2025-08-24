@@ -1,158 +1,222 @@
-import os
 from pathlib import Path
+import os
+import dj_database_url
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Django Settings
+SECRET_KEY=your-secret-key-here
+DEBUG=False
+USE_CLOUDINARY=True
 
-SECRET_KEY = "django-insecure-xxxxxx"  # <-- put your real key here
-DEBUG = True
+# Database (Neon PostgreSQL)
+DATABASE_URL=postgresql://neondb_owner:npg_bGguxX0VRQ7w@ep-shiny-salad-admgmfak-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
 
-ALLOWED_HOSTS = ["*"]
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=dhol8imhb
+CLOUDINARY_API_KEY=616112266455922
+CLOUDINARY_API_SECRET=LVW7RCMdSQzSFQHrP5di_K58p4w
 
-# ------------------------
-# APPLICATIONS
-# ------------------------
+# Email Configuration
+EMAIL_HOST_USER=sonivanshmaster@gmail.com
+EMAIL_HOST_PASSWORD=geid mgxd obrn mubh
+DEFAULT_FROM_EMAIL=sonivanshmaster@gmail.com
+
+# Redis (for production channel layers - optional)
+# REDIS_URL=redis://localhost:6379
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-ll(dkrpdb5wrj+#(zvmhz=a9c*a84%$#!34ib$9ymj6o2i8tzh')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+
+ALLOWED_HOSTS = ['*']
+
+AUTH_USER_MODEL = 'accounts.User'
+
 INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-
-    # Third-party
-    "cloudinary",
-    "cloudinary_storage",
-
-    # Your apps
-    "feed",
-    "chat",
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'daphne',
+    'django.contrib.staticfiles',
+    'poornima_site',
+    'accounts',
+    'feed',
+    'chat',
+    'django.contrib.humanize',
+    'channels',
+    'cloudinary_storage',  # Add this for Cloudinary
+    'cloudinary',          # Add this for Cloudinary
 ]
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # for static files
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = "PoornimaX.urls"
+ROOT_URLCONF = 'poornimax.urls'
 
 TEMPLATES = [
     {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            BASE_DIR / 'templates',
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = "PoornimaX.wsgi.application"
+WSGI_APPLICATION = 'poornimax.wsgi.application'
 
+# Database Configuration
+# Use PostgreSQL in production, SQLite in development
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-# ------------------------
-# DATABASE
-# ------------------------
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "poornimax_db",
-        "USER": "postgres",
-        "PASSWORD": "yourpassword",
-        "HOST": "localhost",
-        "PORT": "5432",
+if DATABASE_URL:
+    # Production database (PostgreSQL via Neon)
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+else:
+    # Development database (SQLite)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
-# ------------------------
-# PASSWORDS
-# ------------------------
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
 ]
 
-# ------------------------
-# LANGUAGE & TIME
-# ------------------------
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "Asia/Kolkata"
+# Internationalization
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# ------------------------
-# STATIC FILES
-# ------------------------
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# ------------------------
-# CLOUDINARY CONFIGURATION
-# ------------------------
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+
+# Cloudinary Configuration
 CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": "dhol8imhb",       # your cloudinary name
-    "API_KEY": "616112266455922",    # your API key
-    "API_SECRET": "LVW7RCMdSQzSFQHrP5di_K58p4w",  # your API secret
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', 'dhol8imhb'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY', '616112266455922'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', 'LVW7RCMdSQzSFQHrP5di_K58p4w'),
 }
 
+# Configure cloudinary
 cloudinary.config(
-    cloud_name=CLOUDINARY_STORAGE["CLOUD_NAME"],
-    api_key=CLOUDINARY_STORAGE["API_KEY"],
-    api_secret=CLOUDINARY_STORAGE["API_SECRET"],
-    secure=True,
+    cloud_name=CLOUDINARY_STORAGE['CLOUD_NAME'],
+    api_key=CLOUDINARY_STORAGE['API_KEY'],
+    api_secret=CLOUDINARY_STORAGE['API_SECRET'],
+    secure=True
 )
 
-# ------------------------
-# MEDIA FILES
-# ------------------------
-DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
-MEDIA_URL = "/media/"
+# Media files configuration
+# Use Cloudinary for media files in production
+if os.getenv('USE_CLOUDINARY', 'False').lower() == 'true':
+    # Production: Use Cloudinary for media files
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    MEDIA_URL = '/media/'
+else:
+    # Development: Use local storage
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(Path.home(), 'PoornimaX')  # Save to ~/PoornimaX folder
 
-# File upload size limits
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'sonivanshmaster@gmail.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'geid mgxd obrn mubh')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'sonivanshmaster@gmail.com')
 
-# ------------------------
-# LOGGING
-# ------------------------
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {"console": {"class": "logging.StreamHandler"}},
-    "loggers": {
-        "cloudinary": {"handlers": ["console"], "level": "DEBUG" if DEBUG else "INFO"},
-        "django": {"handlers": ["console"], "level": "INFO"},
-    },
-}
+# Django Channels Configuration
+ASGI_APPLICATION = 'poornimax.asgi.application'
 
-# ------------------------
-# DEFAULTS
-# ------------------------
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-LOGIN_REDIRECT_URL = "/feed/"
+# Channel layers configuration
+# Use Redis in production, InMemory in development
+REDIS_URL = os.getenv('REDIS_URL')
 
-# ------------------------
-# CSRF SETTINGS
-# ------------------------
-CSRF_TRUSTED_ORIGINS = [
-    "https://*.render.com",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-]
+if REDIS_URL:
+    # Production: Use Redis for channel layers
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [REDIS_URL],
+            },
+        },
+    }
+else:
+    # Development: Use InMemory channel layer
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
+
+# File locking workaround for SQLite
+from django.core.files import locks
+
+def dummy_lock(f, flags):
+    pass
+
+def dummy_unlock(f):
+    pass
+
+locks.lock = dummy_lock
+locks.unlock = dummy_unlock
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Security settings for production
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
