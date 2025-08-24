@@ -777,6 +777,11 @@ document.addEventListener('DOMContentLoaded', function() {
     z-index: 10000;
     opacity: 0;
     transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.3); /* whitish transparent */
+    backdrop-filter: blur(10px);          /* blur behind it */
+    -webkit-backdrop-filter: blur(10px);  /* Safari/iOS support */
+    border-radius: 12px;                  /* rounded corners */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* subtle border */
 }
 
 .popup-overlay.show {
