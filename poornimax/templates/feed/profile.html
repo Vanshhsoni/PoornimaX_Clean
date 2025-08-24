@@ -255,6 +255,7 @@
         </div>
     </div>
 
+
 <!-- Updated Post Overlay HTML -->
 <div class="overlay-container" id="postOverlay">
     <div class="post-overlay-content">
@@ -298,7 +299,6 @@
         <div class="close-overlay" id="closeOverlay"><i class="fas fa-times"></i></div>
     </div>
 </div>
-
     <nav>
         <a href="{% url 'feed:home' %}"><i class="fas fa-home"></i></a>
         <a href="{% url 'feed:explore' %}"><i class="fas fa-compass"></i></a>
@@ -306,10 +306,6 @@
         <a href="{% url 'feed:friends_list' %}" class="active-link"><i class="fas fa-user-friends"></i></a>
         <a href="{% url 'chat:inbox' %}"><i class="fas fa-comment"></i></a>
     </nav>
-    
-
-
-
 <script>
 function getCookie(name) {
     let cookieValue = null;
@@ -391,7 +387,7 @@ async function openPostOverlay(postId) {
 
             // Show/hide 3-dot menu based on post ownership
             const postOptions = document.getElementById('overlayPostOptions');
-            if (post.is_current_user) {
+            if (post.is_owner) {
                 postOptions.style.display = 'block';
             } else {
                 postOptions.style.display = 'none';
