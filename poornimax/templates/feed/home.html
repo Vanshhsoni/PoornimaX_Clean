@@ -33,6 +33,91 @@
             --radius-lg: 1rem;    /* 16px */
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        /* 3-dot menu */
+.post-options {
+    position: relative;
+    display: inline-block;
+    margin-left: auto;
+}
+.options-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+}
+.options-menu {
+    position: absolute;
+    right: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+}
+.options-menu.hidden {
+    display: none;
+}
+.options-menu button {
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+}
+.options-menu button:hover {
+    background: #f0f0f0;
+}
+
+/* Popup */
+.popup-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+.popup-box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    width: 280px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+.popup-box p {
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+.popup-actions {
+    display: flex;
+    justify-content: space-around;
+}
+.popup-cancel, .popup-delete {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 14px;
+}
+.popup-cancel {
+    background: #f0f0f0;
+    color: #333;
+}
+.popup-delete {
+    background: #007BFF;
+    color: white;
+}
+.popup-delete:hover {
+    background: #0056b3;
+}
+
 
         /* Base & Reset */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -792,39 +877,85 @@
             }
         }
 
-        createPostCard(post) {
-            const card = document.createElement('div');
-            card.className = 'post-card';
-            card.id = `post-card-${post.id}`;
-            
-            card.innerHTML = `
-                <div class="post-header">
-                    <a href="/feed/profile/${post.user.id}/">
-                        <img src="${post.user.profile_picture}" alt="${post.user.username}'s avatar" class="post-user-avatar">
-                        <span>${post.user.full_name || post.user.username}</span>
-                    </a>
+createPostCard(post) {
+    const card = document.createElement('div');
+    card.className = 'post-card';
+    card.id = `post-card-${post.id}`;
+    
+    card.innerHTML = `
+        <div class="post-header">
+            <a href="/feed/profile/${post.user.id}/">
+                <img src="${post.user.profile_picture}" alt="${post.user.username}'s avatar" class="post-user-avatar">
+                <span>${post.user.full_name || post.user.username}</span>
+            </a>
+            ${post.user.is_current_user ? `
+            <div class="post-options">
+                <button class="options-btn">⋮</button>
+                <div class="options-menu hidden">
+                    <button class="delete-btn" data-post-id="${post.id}">Delete</button>
                 </div>
-                <div class="post-image-container">
-                    <img src="${post.image}" alt="Post by ${post.user.username}" class="post-image" loading="lazy">
-                </div>
-                <div class="post-actions">
-                    <button class="post-action-btn like-btn ${post.is_liked ? 'liked' : ''}" data-post-id="${post.id}">
-                        <i class="${post.is_liked ? 'fas fa-heart' : 'far fa-heart'}"></i>
-                    </button>
-                    <button class="post-action-btn comment-btn" data-post-id="${post.id}">
-                        <i class="far fa-comment"></i>
-                    </button>
-                </div>
-                ${post.caption ? `
-                <div class="post-caption">
-                    <a href="/feed/profile/${post.user.id}/">${post.user.full_name || post.user.username}</a>
-                    ${post.caption}
-                </div>
-                ` : ''}
-            `;
-            
-            return card;
-        }
+            </div>` : ''}
+        </div>
+        <div class="post-image-container">
+            <img src="${post.image}" alt="Post by ${post.user.username}" class="post-image" loading="lazy">
+        </div>
+        <div class="post-actions">
+            <button class="post-action-btn like-btn ${post.is_liked ? 'liked' : ''}" data-post-id="${post.id}">
+                <i class="${post.is_liked ? 'fas fa-heart' : 'far fa-heart'}"></i>
+            </button>
+            <button class="post-action-btn comment-btn" data-post-id="${post.id}">
+                <i class="far fa-comment"></i>
+            </button>
+        </div>
+        ${post.caption ? `
+        <div class="post-caption">
+            <a href="/feed/profile/${post.user.id}/">${post.user.full_name || post.user.username}</a>
+            ${post.caption}
+        </div>
+        ` : ''}
+    `;
+
+    // Toggle 3-dot menu
+    const optionsBtn = card.querySelector('.options-btn');
+    const optionsMenu = card.querySelector('.options-menu');
+    if (optionsBtn) {
+        optionsBtn.addEventListener('click', () => {
+            optionsMenu.classList.toggle('hidden');
+        });
+    }
+
+    // Delete button click → show confirmation popup
+    const deleteBtn = card.querySelector('.delete-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+            showDeletePopup(post.id);
+        });
+    }
+
+    return card;
+}
+
+// Confirmation popup
+function showDeletePopup(postId) {
+    const popup = document.createElement('div');
+    popup.className = 'popup-overlay';
+    popup.innerHTML = `
+        <div class="popup-box">
+            <p>Are you sure you want to delete this post?</p>
+            <div class="popup-actions">
+                <button class="popup-cancel">Cancel</button>
+                <a href="/feed/post/${postId}/delete/" class="popup-delete">Delete</a>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    popup.querySelector('.popup-cancel').addEventListener('click', () => {
+        popup.remove();
+    });
+}
+
 
         setupEventListeners() {
             // Load more posts button
