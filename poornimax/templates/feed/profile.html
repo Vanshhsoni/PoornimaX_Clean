@@ -255,30 +255,49 @@
         </div>
     </div>
 
-    <div class="overlay-container" id="postOverlay">
-        <div class="post-overlay-content">
-            <div class="post-image-container"><img src="" alt="Post" id="overlayPostImage"></div>
-            <div class="post-details">
-                <div class="post-header">
+<!-- Updated Post Overlay HTML -->
+<div class="overlay-container" id="postOverlay">
+    <div class="post-overlay-content">
+        <div class="post-image-container"><img src="" alt="Post" id="overlayPostImage"></div>
+        <div class="post-details">
+            <div class="post-header">
+                <div class="post-header-left">
                     <img src="" alt="User" class="post-user-img" id="overlayUserImage">
                     <div>
                         <div class="post-username" id="overlayUsername"></div>
                         <div class="post-time">Posted <span id="overlayTime"></span></div>
                     </div>
                 </div>
-                <div class="post-caption" id="overlayCaption"></div>
-                <div class="comments-container" id="commentsContainer"></div>
-                <div class="post-actions">
-                    <div class="action-buttons">
-                        <form method="POST" action="" id="likeForm" style="display: inline;"> {% csrf_token %} <button type="submit" class="action-btn like-btn" id="likeButton"><i class="far fa-heart" id="likeIcon"></i></button> </form>
-                        <span class="like-count" id="likeCount">0 likes</span>
+                <!-- 3-dot menu for post options -->
+                <div class="post-options" id="overlayPostOptions" style="display: none;">
+                    <button class="options-btn" id="overlayOptionsBtn" title="More options">⋮</button>
+                    <div class="options-menu hidden" id="overlayOptionsMenu">
+                        <button class="delete-btn" id="overlayDeleteBtn">Delete</button>
                     </div>
-                    <form method="POST" action="" id="commentForm" class="comment-form"> {% csrf_token %} <input type="text" name="content" class="comment-input" placeholder="Add a comment..." required> <button type="submit" class="comment-submit-btn">Post</button> </form>
                 </div>
             </div>
-            <div class="close-overlay" id="closeOverlay"><i class="fas fa-times"></i></div>
+            <div class="post-caption" id="overlayCaption"></div>
+            <div class="comments-container" id="commentsContainer"></div>
+            <div class="post-actions">
+                <div class="action-buttons">
+                    <form method="POST" action="" id="likeForm" style="display: inline;"> 
+                        {% csrf_token %} 
+                        <button type="submit" class="action-btn like-btn" id="likeButton">
+                            <i class="far fa-heart" id="likeIcon"></i>
+                        </button> 
+                    </form>
+                    <span class="like-count" id="likeCount">0 likes</span>
+                </div>
+                <form method="POST" action="" id="commentForm" class="comment-form"> 
+                    {% csrf_token %} 
+                    <input type="text" name="content" class="comment-input" placeholder="Add a comment..." required> 
+                    <button type="submit" class="comment-submit-btn">Post</button> 
+                </form>
+            </div>
         </div>
+        <div class="close-overlay" id="closeOverlay"><i class="fas fa-times"></i></div>
     </div>
+</div>
 
     <nav>
         <a href="{% url 'feed:home' %}"><i class="fas fa-home"></i></a>
@@ -288,261 +307,457 @@
         <a href="{% url 'chat:inbox' %}"><i class="fas fa-comment"></i></a>
     </nav>
     
-    <script>
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+
+
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
         }
-        return cookieValue;
     }
-    const csrftoken = getCookie('csrftoken');
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
 
-    const postOverlay = document.getElementById('postOverlay');
-    const closeOverlayBtn = document.getElementById('closeOverlay');
-    function closePostOverlay() {
-        postOverlay.classList.remove('active');
-        document.body.classList.remove('overlay-active');
-    }
-    if (closeOverlayBtn) closeOverlayBtn.addEventListener('click', closePostOverlay);
-    if (postOverlay) postOverlay.addEventListener('click', (e) => { if (e.target === postOverlay) closePostOverlay(); });
+const postOverlay = document.getElementById('postOverlay');
+const closeOverlayBtn = document.getElementById('closeOverlay');
+let currentPostId = null; // Track current post ID for delete functionality
 
-    async function openPostOverlay(postId) {
-        try {
-            const response = await fetch(`{% url 'feed:get_post_data' 0 %}`.replace('0', postId));
-            if (!response.ok) throw new Error('Network response was not ok');
-            const data = await response.json();
+function closePostOverlay() {
+    postOverlay.classList.remove('active');
+    document.body.classList.remove('overlay-active');
+    currentPostId = null; // Reset current post ID
+}
+
+if (closeOverlayBtn) closeOverlayBtn.addEventListener('click', closePostOverlay);
+if (postOverlay) postOverlay.addEventListener('click', (e) => { 
+    if (e.target === postOverlay) closePostOverlay(); 
+});
+
+// Delete confirmation popup
+function showDeletePopup(postId) {
+    const popup = document.createElement('div');
+    popup.className = 'popup-overlay';
+    popup.innerHTML = `
+        <div class="popup-box">
+            <p>Are you sure you want to delete this post?</p>
+            <div class="popup-actions">
+                <button class="popup-cancel">Cancel</button>
+                <a href="/feed/post/${postId}/delete/" class="popup-delete">Delete</a>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    popup.querySelector('.popup-cancel').addEventListener('click', () => {
+        popup.remove();
+    });
+}
+
+async function openPostOverlay(postId) {
+    currentPostId = postId; // Store current post ID
+    
+    try {
+        const response = await fetch(`{% url 'feed:get_post_data' 0 %}`.replace('0', postId));
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        
+        if (data.success) {
+            const post = data.post;
+            document.getElementById('overlayPostImage').src = post.image;
+            document.getElementById('overlayUserImage').src = post.user_image;
+            document.getElementById('overlayUsername').textContent = post.username;
+            document.getElementById('overlayTime').textContent = post.time;
             
-            if (data.success) {
-                const post = data.post;
-                document.getElementById('overlayPostImage').src = post.image;
-                document.getElementById('overlayUserImage').src = post.user_image;
-                document.getElementById('overlayUsername').textContent = post.username;
-                document.getElementById('overlayTime').textContent = post.time;
-                document.getElementById('overlayCaption').textContent = post.caption;
-                document.getElementById('likeCount').textContent = `${post.likes_count} likes`;
-
-                document.getElementById('likeForm').action = `{% url 'feed:like_post' 0 %}`.replace('0', postId);
-                document.getElementById('commentForm').action = `{% url 'feed:add_comment' 0 %}`.replace('0', postId);
-
-                const likeBtn = document.getElementById('likeButton');
-                const likeIcon = document.getElementById('likeIcon');
-                likeBtn.classList.toggle('active', post.liked);
-                likeIcon.classList.toggle('fas', post.liked);
-                likeIcon.classList.toggle('far', !post.liked);
-                
-                const commentsContainer = document.getElementById('commentsContainer');
-                commentsContainer.innerHTML = '';
-                
-                if (post.comments.length === 0) {
-                    commentsContainer.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 20px;">Be the first to comment!</p>';
-                } else {
-                    post.comments.forEach(comment => {
-                        const commentEl = document.createElement('div');
-                        commentEl.className = 'comment';
-                        commentEl.innerHTML = `
-                            <a href="#"><img src="${comment.user_image}" alt="${comment.username}" class="comment-user-img"></a>
-                            <div class="comment-content">
-                                <a href="#"><span class="comment-username">${comment.username}</span></a>
-                                <p class="comment-text">${comment.content}</p>
-                                <div class="comment-time">${moment(comment.created_at).fromNow()}</div>
-                            </div>`;
-                        commentsContainer.appendChild(commentEl);
-                    });
-                }
-                
-                postOverlay.classList.add('active');
-                document.body.classList.add('overlay-active');
+            // Set caption with proper content
+            const captionElement = document.getElementById('overlayCaption');
+            if (post.caption && post.caption.trim()) {
+                captionElement.textContent = post.caption;
+                captionElement.style.display = 'block';
             } else {
-                alert('Error loading post: ' + data.error);
+                captionElement.style.display = 'none';
             }
-        } catch (error) {
-            console.error('Error fetching post data:', error);
+            
+            document.getElementById('likeCount').textContent = `${post.likes_count} likes`;
+
+            // Show/hide 3-dot menu based on post ownership
+            const postOptions = document.getElementById('overlayPostOptions');
+            if (post.is_current_user) {
+                postOptions.style.display = 'block';
+            } else {
+                postOptions.style.display = 'none';
+            }
+
+            document.getElementById('likeForm').action = `{% url 'feed:like_post' 0 %}`.replace('0', postId);
+            document.getElementById('commentForm').action = `{% url 'feed:add_comment' 0 %}`.replace('0', postId);
+
+            const likeBtn = document.getElementById('likeButton');
+            const likeIcon = document.getElementById('likeIcon');
+            likeBtn.classList.toggle('active', post.liked);
+            likeIcon.classList.toggle('fas', post.liked);
+            likeIcon.classList.toggle('far', !post.liked);
+            
+            const commentsContainer = document.getElementById('commentsContainer');
+            commentsContainer.innerHTML = '';
+            
+            if (post.comments.length === 0) {
+                commentsContainer.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 20px;">Be the first to comment!</p>';
+            } else {
+                post.comments.forEach(comment => {
+                    const commentEl = document.createElement('div');
+                    commentEl.className = 'comment';
+                    commentEl.innerHTML = `
+                        <a href="#"><img src="${comment.user_image}" alt="${comment.username}" class="comment-user-img"></a>
+                        <div class="comment-content">
+                            <a href="#"><span class="comment-username">${comment.username}</span></a>
+                            <p class="comment-text">${comment.content}</p>
+                            <div class="comment-time">${moment(comment.created_at).fromNow()}</div>
+                        </div>`;
+                    commentsContainer.appendChild(commentEl);
+                });
+            }
+            
+            postOverlay.classList.add('active');
+            document.body.classList.add('overlay-active');
+        } else {
+            alert('Error loading post: ' + data.error);
         }
+    } catch (error) {
+        console.error('Error fetching post data:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Particles and chart code remains the same
+    particlesJS('particles-js', { particles: { number: { value: 50 }, color: { value: "#007bff" }, shape: { type: "circle" }, opacity: { value: 0.4, random: true }, size: { value: 3, random: true }, line_linked: { enable: true, distance: 150, color: "#007bff", opacity: 0.2, width: 1 }, move: { enable: true, speed: 2, direction: "none", out_mode: "out" } }, interactivity: { detect_on: "canvas", events: { onhover: { enable: true, mode: "grab" }, onclick: { enable: false } }, modes: { grab: { distance: 140, line_linked: { opacity: 0.5 } } } } });
+
+    const chartEl = document.getElementById('compatibilityChart');
+    if (chartEl) {
+        const score = parseInt('{{ compatibility_score|default:0 }}');
+        const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+        new Chart(chartEl.getContext('2d'), {
+            type: 'doughnut',
+            data: { datasets: [{ data: [score, 100 - score], backgroundColor: [primaryColor, 'rgba(128, 128, 128, 0.1)'], borderWidth: 0, cutout: '75%' }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { animateRotate: true, animateScale: true, duration: 1500 } }
+        });
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        particlesJS('particles-js', { particles: { number: { value: 50 }, color: { value: "#007bff" }, shape: { type: "circle" }, opacity: { value: 0.4, random: true }, size: { value: 3, random: true }, line_linked: { enable: true, distance: 150, color: "#007bff", opacity: 0.2, width: 1 }, move: { enable: true, speed: 2, direction: "none", out_mode: "out" } }, interactivity: { detect_on: "canvas", events: { onhover: { enable: true, mode: "grab" }, onclick: { enable: false } }, modes: { grab: { distance: 140, line_linked: { opacity: 0.5 } } } } });
+    // 3-dot menu functionality
+    const overlayOptionsBtn = document.getElementById('overlayOptionsBtn');
+    const overlayOptionsMenu = document.getElementById('overlayOptionsMenu');
+    const overlayDeleteBtn = document.getElementById('overlayDeleteBtn');
 
-        const chartEl = document.getElementById('compatibilityChart');
-        if (chartEl) {
-            const score = parseInt('{{ compatibility_score|default:0 }}');
-            const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
-            new Chart(chartEl.getContext('2d'), {
-                type: 'doughnut',
-                data: { datasets: [{ data: [score, 100 - score], backgroundColor: [primaryColor, 'rgba(128, 128, 128, 0.1)'], borderWidth: 0, cutout: '75%' }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { animateRotate: true, animateScale: true, duration: 1500 } }
-            });
-        }
-        
-        const likeForm = document.getElementById('likeForm');
-        if (likeForm) {
-            likeForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                try {
-                    const response = await fetch(likeForm.action, {
-                        method: 'POST', body: new FormData(likeForm), headers: { 'X-CSRFToken': csrftoken, 'X-Requested-With': 'XMLHttpRequest' }
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                        document.getElementById('likeCount').textContent = `${data.likes_count} likes`;
-                        const likeBtn = document.getElementById('likeButton');
-                        const likeIcon = document.getElementById('likeIcon');
-                        likeBtn.classList.toggle('active', data.liked);
-                        likeIcon.classList.toggle('fas', data.liked);
-                        likeIcon.classList.toggle('far', !data.liked);
-                    }
-                } catch (error) { console.error('Like Action Error:', error); }
-            });
-        }
-        
-        const commentForm = document.getElementById('commentForm');
-        if (commentForm) {
-            commentForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const contentInput = commentForm.querySelector('input[name="content"]');
-                if (!contentInput.value.trim()) return;
-                
-                try {
-                    const response = await fetch(commentForm.action, {
-                        method: 'POST', body: new FormData(commentForm), headers: { 'X-CSRFToken': csrftoken, 'X-Requested-with': 'XMLHttpRequest' }
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                        const commentsContainer = document.getElementById('commentsContainer');
-                        const noCommentsEl = commentsContainer.querySelector('p');
-                        if (noCommentsEl) noCommentsEl.remove();
+    if (overlayOptionsBtn) {
+        overlayOptionsBtn.addEventListener('click', () => {
+            overlayOptionsMenu.classList.toggle('hidden');
+        });
+    }
 
-                        const newComment = data.comment;
-                        const commentEl = document.createElement('div');
-                        commentEl.className = 'comment new-comment-animation';
-                        commentEl.innerHTML = `
-                            <img src="${newComment.user.profile_picture_url}" alt="${newComment.user.username}" class="comment-user-img">
-                            <div class="comment-content">
-                                <span class="comment-username">${newComment.user.username}</span>
-                                <p class="comment-text">${newComment.content}</p>
-                                <div class="comment-time">${moment(newComment.created_at).fromNow()}</div>
-                            </div>`;
-                        
-                        commentsContainer.prepend(commentEl);
-                        contentInput.value = '';
-                    }
-                } catch (error) { console.error('Comment Action Error:', error); }
-            });
-        }
+    if (overlayDeleteBtn) {
+        overlayDeleteBtn.addEventListener('click', () => {
+            if (currentPostId) {
+                showDeletePopup(currentPostId);
+            }
+        });
+    }
 
-        // --- FIXED: AJAX Crush Button Handler ---
-        const crushButtonContainer = document.getElementById('crushButtonContainer');
-        if (crushButtonContainer) {
-            crushButtonContainer.addEventListener('click', async function(e) {
-                if (e.target.matches('button[data-action]') || e.target.closest('button[data-action]')) {
-                    e.preventDefault();
-                    
-                    const button = e.target.matches('button[data-action]') ? e.target : e.target.closest('button[data-action]');
-                    const action = button.getAttribute('data-action');
-                    
-                    // Add loading state
-                    button.classList.add('loading');
-                    const originalHTML = button.innerHTML;
-                    button.innerHTML = '<i class="fas fa-spinner"></i> Processing...';
-                    
-                    try {
-                        // Create FormData with the correct parameter name
-                        const formData = new FormData();
-                        formData.append('crush_action', action);
-                        
-                        const response = await fetch(`{% url 'feed:crush_action_profile' profile_user.id %}`, {
-                            method: 'POST',
-                            body: formData,
-                            headers: { 
-                                'X-CSRFToken': csrftoken, 
-                                'X-Requested-With': 'XMLHttpRequest' 
-                            }
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        
-                        const data = await response.json();
-                        
-                        if (data.status === 'ok') {
-                            // Update button based on new state
-                            const messageButton = document.getElementById('messageButton');
-                            const postsSection = document.querySelector('.posts-section');
-                            const privatePostsMessage = document.getElementById('privatePostsMessage');
-                            const privateMessageStatus = document.getElementById('privateMessageStatus');
-
-                            let newButtonHTML = '';
-                            let newButtonClass = '';
-                            let newButtonAction = '';
-
-                            if (data.is_mutual) {
-                                newButtonHTML = '<i class="fas fa-heart"></i> Mutual Crush';
-                                newButtonClass = 'heart-btn btn-mutual';
-                                newButtonAction = 'uncrush';
-                                if (messageButton) messageButton.style.display = 'flex';
-                                if (postsSection) postsSection.style.display = 'block';
-                                if (privatePostsMessage) privatePostsMessage.style.display = 'none';
-                            } else if (data.sent_crush) {
-                                newButtonHTML = '<i class="fas fa-heart-crack"></i> Crush Sent';
-                                newButtonClass = 'heart-btn btn-sent';
-                                newButtonAction = 'uncrush';
-                                if (privateMessageStatus) privateMessageStatus.textContent = "You've sent a crush. Waiting for them to accept.";
-                                if (messageButton) messageButton.style.display = 'none';
-                                if (postsSection) postsSection.style.display = 'none';
-                                if (privatePostsMessage) privatePostsMessage.style.display = 'block';
-                            } else if (data.received_crush) {
-                                newButtonHTML = '<i class="fas fa-heart-pulse"></i> Crush Back';
-                                newButtonClass = 'heart-btn btn-received';
-                                newButtonAction = 'accept_crush';
-                                if (privateMessageStatus) privateMessageStatus.textContent = "They sent you a crush. Crush back to connect!";
-                                if (messageButton) messageButton.style.display = 'none';
-                                if (postsSection) postsSection.style.display = 'none';
-                                if (privatePostsMessage) privatePostsMessage.style.display = 'block';
-                            } else {
-                                newButtonHTML = '<i class="far fa-heart"></i> Send Crush';
-                                newButtonClass = 'heart-btn btn-send';
-                                newButtonAction = 'send_crush';
-                                if (privateMessageStatus) privateMessageStatus.textContent = "Send a crush to connect!";
-                                if (messageButton) messageButton.style.display = 'none';
-                                if (postsSection) postsSection.style.display = 'none';
-                                if (privatePostsMessage) privatePostsMessage.style.display = 'block';
-                            }
-
-                            // Update the button
-                            button.className = newButtonClass;
-                            button.setAttribute('data-action', newButtonAction);
-                            button.innerHTML = newButtonHTML;
-                            
-                        } else {
-                            // Handle error response
-                            console.error('Server error:', data.message);
-                            alert('Error: ' + (data.message || 'Something went wrong'));
-                            // Restore original button state
-                            button.innerHTML = originalHTML;
-                        }
-                        
-                    } catch (error) {
-                        console.error('Crush Action Error:', error);
-                        alert('Network error. Please try again.');
-                        // Restore original button state
-                        button.innerHTML = originalHTML;
-                    } finally {
-                        // Remove loading state
-                        button.classList.remove('loading');
-                    }
-                }
-            });
+    // Close options menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.post-options')) {
+            if (overlayOptionsMenu) {
+                overlayOptionsMenu.classList.add('hidden');
+            }
         }
     });
-    </script>
+    
+    // Like form handler
+    const likeForm = document.getElementById('likeForm');
+    if (likeForm) {
+        likeForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            try {
+                const response = await fetch(likeForm.action, {
+                    method: 'POST', body: new FormData(likeForm), headers: { 'X-CSRFToken': csrftoken, 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('likeCount').textContent = `${data.likes_count} likes`;
+                    const likeBtn = document.getElementById('likeButton');
+                    const likeIcon = document.getElementById('likeIcon');
+                    likeBtn.classList.toggle('active', data.liked);
+                    likeIcon.classList.toggle('fas', data.liked);
+                    likeIcon.classList.toggle('far', !data.liked);
+                }
+            } catch (error) { console.error('Like Action Error:', error); }
+        });
+    }
+    
+    // Comment form handler
+    const commentForm = document.getElementById('commentForm');
+    if (commentForm) {
+        commentForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const contentInput = commentForm.querySelector('input[name="content"]');
+            if (!contentInput.value.trim()) return;
+            
+            try {
+                const response = await fetch(commentForm.action, {
+                    method: 'POST', body: new FormData(commentForm), headers: { 'X-CSRFToken': csrftoken, 'X-Requested-with': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const commentsContainer = document.getElementById('commentsContainer');
+                    const noCommentsEl = commentsContainer.querySelector('p');
+                    if (noCommentsEl) noCommentsEl.remove();
+
+                    const newComment = data.comment;
+                    const commentEl = document.createElement('div');
+                    commentEl.className = 'comment new-comment-animation';
+                    commentEl.innerHTML = `
+                        <img src="${newComment.user.profile_picture_url}" alt="${newComment.user.username}" class="comment-user-img">
+                        <div class="comment-content">
+                            <span class="comment-username">${newComment.user.username}</span>
+                            <p class="comment-text">${newComment.content}</p>
+                            <div class="comment-time">${moment(newComment.created_at).fromNow()}</div>
+                        </div>`;
+                    
+                    commentsContainer.prepend(commentEl);
+                    contentInput.value = '';
+                }
+            } catch (error) { console.error('Comment Action Error:', error); }
+        });
+    }
+
+    // Crush button handler (existing code)
+    const crushButtonContainer = document.getElementById('crushButtonContainer');
+    if (crushButtonContainer) {
+        crushButtonContainer.addEventListener('click', async function(e) {
+            if (e.target.matches('button[data-action]') || e.target.closest('button[data-action]')) {
+                e.preventDefault();
+                
+                const button = e.target.matches('button[data-action]') ? e.target : e.target.closest('button[data-action]');
+                const action = button.getAttribute('data-action');
+                
+                button.classList.add('loading');
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner"></i> Processing...';
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('crush_action', action);
+                    
+                    const response = await fetch(`{% url 'feed:crush_action_profile' profile_user.id %}`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 
+                            'X-CSRFToken': csrftoken, 
+                            'X-Requested-With': 'XMLHttpRequest' 
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'ok') {
+                        const messageButton = document.getElementById('messageButton');
+                        const postsSection = document.querySelector('.posts-section');
+                        const privatePostsMessage = document.getElementById('privatePostsMessage');
+                        const privateMessageStatus = document.getElementById('privateMessageStatus');
+
+                        let newButtonHTML = '';
+                        let newButtonClass = '';
+                        let newButtonAction = '';
+
+                        if (data.is_mutual) {
+                            newButtonHTML = '<i class="fas fa-heart"></i> Mutual Crush';
+                            newButtonClass = 'heart-btn btn-mutual';
+                            newButtonAction = 'uncrush';
+                            if (messageButton) messageButton.style.display = 'flex';
+                            if (postsSection) postsSection.style.display = 'block';
+                            if (privatePostsMessage) privatePostsMessage.style.display = 'none';
+                        } else if (data.sent_crush) {
+                            newButtonHTML = '<i class="fas fa-heart-crack"></i> Crush Sent';
+                            newButtonClass = 'heart-btn btn-sent';
+                            newButtonAction = 'uncrush';
+                            if (privateMessageStatus) privateMessageStatus.textContent = "You've sent a crush. Waiting for them to accept.";
+                            if (messageButton) messageButton.style.display = 'none';
+                            if (postsSection) postsSection.style.display = 'none';
+                            if (privatePostsMessage) privatePostsMessage.style.display = 'block';
+                        } else if (data.received_crush) {
+                            newButtonHTML = '<i class="fas fa-heart-pulse"></i> Crush Back';
+                            newButtonClass = 'heart-btn btn-received';
+                            newButtonAction = 'accept_crush';
+                            if (privateMessageStatus) privateMessageStatus.textContent = "They sent you a crush. Crush back to connect!";
+                            if (messageButton) messageButton.style.display = 'none';
+                            if (postsSection) postsSection.style.display = 'none';
+                            if (privatePostsMessage) privatePostsMessage.style.display = 'block';
+                        } else {
+                            newButtonHTML = '<i class="far fa-heart"></i> Send Crush';
+                            newButtonClass = 'heart-btn btn-send';
+                            newButtonAction = 'send_crush';
+                            if (privateMessageStatus) privateMessageStatus.textContent = "Send a crush to connect!";
+                            if (messageButton) messageButton.style.display = 'none';
+                            if (postsSection) postsSection.style.display = 'none';
+                            if (privatePostsMessage) privatePostsMessage.style.display = 'block';
+                        }
+
+                        button.className = newButtonClass;
+                        button.setAttribute('data-action', newButtonAction);
+                        button.innerHTML = newButtonHTML;
+                        
+                    } else {
+                        console.error('Server error:', data.message);
+                        alert('Error: ' + (data.message || 'Something went wrong'));
+                        button.innerHTML = originalHTML;
+                    }
+                    
+                } catch (error) {
+                    console.error('Crush Action Error:', error);
+                    alert('Network error. Please try again.');
+                    button.innerHTML = originalHTML;
+                } finally {
+                    button.classList.remove('loading');
+                }
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.post-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.post-header-left {
+    display: flex;
+    align-items: center;
+}
+
+.post-options {
+    position: relative;
+}
+
+.options-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.options-btn:hover {
+    background: var(--background-secondary);
+    color: var(--text);
+}
+
+.options-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    min-width: 120px;
+}
+
+.options-menu.hidden {
+    display: none;
+}
+
+.delete-btn {
+    width: 100%;
+    padding: 10px 15px;
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    text-align: left;
+    font-size: 14px;
+}
+
+.delete-btn:hover {
+    background: var(--background-secondary);
+}
+
+.post-caption {
+    margin-bottom: 15px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    word-wrap: break-word;
+}
+
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.popup-box {
+    background: var(--background);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    max-width: 300px;
+    margin: 20px;
+}
+
+.popup-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.popup-cancel, .popup-delete {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.popup-cancel {
+    background: var(--background-secondary);
+    color: var(--text);
+}
+
+.popup-delete {
+    background: #ef4444;
+    color: white;
+}
+</style>
 </body>
 </html>
