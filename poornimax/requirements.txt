@@ -7,9 +7,9 @@ daphne==4.2.1
 # WebSocket support
 channels==4.1.0
 
-# Database
+# Database (using older version for Python 3.13 compatibility)
 dj-database-url==1.2.0
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.5
 
 # Static files serving
 whitenoise==6.5.0
