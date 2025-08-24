@@ -262,99 +262,132 @@
     </div>
 
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const username = "{{ other_user.username }}";
-        const currentUser = "{{ request.user.username }}";
-        const chatSocket = new WebSocket(`ws://${window.location.host}/ws/chat/${username}/`);
+document.addEventListener('DOMContentLoaded', () => {
+    const username = "{{ other_user.username }}";
+    const currentUser = "{{ request.user.username }}";
+    
+    // 🔥 FIX: Proper protocol detection for production
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/chat/${username}/`;
+    
+    console.log('Attempting WebSocket connection to:', wsUrl);
+    
+    const chatSocket = new WebSocket(wsUrl);
+    const chatMessages = document.getElementById('chat-messages');
+    const messageForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('message-input');
+    const loader = document.getElementById('loaderContainer');
 
-        const chatMessages = document.getElementById('chat-messages');
-        const messageForm = document.getElementById('chat-form');
-        const messageInput = document.getElementById('message-input');
-        const loader = document.getElementById('loaderContainer');
+    // --- Helper Functions ---
+    const scrollToBottom = () => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    };
 
-        // --- Helper Functions ---
-        const scrollToBottom = () => {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        };
+    const createMessageElement = (message, sender) => {
+        const messageDiv = document.createElement('div');
+        const isSent = sender === currentUser;
+        messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
 
-        const createMessageElement = (message, sender) => {
-            const messageDiv = document.createElement('div');
-            const isSent = sender === currentUser;
-            messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.textContent = message;
 
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            contentDiv.textContent = message;
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'message-meta';
+        const now = new Date();
+        metaDiv.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
-            const metaDiv = document.createElement('div');
-            metaDiv.className = 'message-meta';
-            const now = new Date();
-            metaDiv.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-
-            messageDiv.appendChild(contentDiv);
-            messageDiv.appendChild(metaDiv);
-            
-            return messageDiv;
-        };
-
-        const sendMessage = () => {
-            const message = messageInput.value.trim();
-            if (message) {
-                chatSocket.send(JSON.stringify({
-                    'message': message,
-                    'sender': currentUser
-                }));
-                const messageElement = createMessageElement(message, currentUser);
-                chatMessages.appendChild(messageElement);
-                messageInput.value = '';
-                messageInput.style.height = 'auto'; // Reset height
-                scrollToBottom();
-            }
-        };
+        messageDiv.appendChild(contentDiv);
+        messageDiv.appendChild(metaDiv);
         
-        // Auto-growing textarea
-        messageInput.addEventListener('input', () => {
-            messageInput.style.height = 'auto';
-            messageInput.style.height = `${messageInput.scrollHeight}px`;
-        });
+        return messageDiv;
+    };
 
-        // --- WebSocket Event Handlers ---
-        chatSocket.onopen = (e) => {
-            console.log("WebSocket connection opened.");
-            // Hide loader and scroll to bottom once connected and content is likely rendered.
-            setTimeout(() => {
-                if(loader) loader.classList.add('hidden');
-                scrollToBottom();
-                messageInput.focus();
-            }, 500);
-        };
+    const sendMessage = () => {
+        const message = messageInput.value.trim();
+        if (message && chatSocket.readyState === WebSocket.OPEN) {
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'sender': currentUser
+            }));
+            const messageElement = createMessageElement(message, currentUser);
+            chatMessages.appendChild(messageElement);
+            messageInput.value = '';
+            messageInput.style.height = 'auto'; // Reset height
+            scrollToBottom();
+        } else if (chatSocket.readyState !== WebSocket.OPEN) {
+            console.error('WebSocket is not open. ReadyState:', chatSocket.readyState);
+            alert('Connection lost. Please refresh the page.');
+        }
+    };
+    
+    // Auto-growing textarea
+    messageInput.addEventListener('input', () => {
+        messageInput.style.height = 'auto';
+        messageInput.style.height = `${messageInput.scrollHeight}px`;
+    });
 
-        chatSocket.onmessage = (e) => {
-            const data = JSON.parse(e.data);
-            if (data.sender !== currentUser) {
-                const messageElement = createMessageElement(data.message, data.sender);
-                chatMessages.appendChild(messageElement);
-                scrollToBottom();
-            }
-        };
+    // --- WebSocket Event Handlers ---
+    chatSocket.onopen = (e) => {
+        console.log("✅ WebSocket connection established successfully");
+        // Hide loader and scroll to bottom once connected
+        setTimeout(() => {
+            if(loader) loader.classList.add('hidden');
+            scrollToBottom();
+            messageInput.focus();
+        }, 500);
+    };
 
-        chatSocket.onclose = (e) => {
-            console.error('Chat socket closed unexpectedly');
-        };
+    chatSocket.onmessage = (e) => {
+        console.log("📨 Received message:", e.data);
+        const data = JSON.parse(e.data);
+        if (data.sender !== currentUser) {
+            const messageElement = createMessageElement(data.message, data.sender);
+            chatMessages.appendChild(messageElement);
+            scrollToBottom();
+        }
+    };
 
-        // --- Form Submission ---
-        messageForm.addEventListener('submit', (e) => {
+    chatSocket.onerror = (e) => {
+        console.error("❌ WebSocket error:", e);
+        if(loader) loader.classList.add('hidden');
+    };
+
+    chatSocket.onclose = (e) => {
+        console.error(`🔌 WebSocket closed. Code: ${e.code}, Reason: ${e.reason}`);
+        if(loader) loader.classList.add('hidden');
+        
+        // Show user-friendly error message
+        if (e.code !== 1000) { // 1000 is normal closure
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 1rem; margin: 1rem; border-radius: 8px; text-align: center;';
+            errorDiv.innerHTML = '⚠️ Connection lost. <button onclick="window.location.reload()" style="margin-left: 8px; padding: 4px 8px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">Refresh Page</button>';
+            chatMessages.appendChild(errorDiv);
+        }
+    };
+
+    // --- Form Submission ---
+    messageForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        sendMessage();
+    });
+
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
-        });
-
-        messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
+        }
     });
+
+    // Connection timeout fallback
+    setTimeout(() => {
+        if (chatSocket.readyState === WebSocket.CONNECTING) {
+            console.warn('WebSocket taking too long to connect...');
+            chatSocket.close();
+            if(loader) loader.classList.add('hidden');
+        }
+    }, 10000); // 10 second timeout
+});
     </script>
 </body>
 </html>
