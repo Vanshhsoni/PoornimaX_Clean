@@ -7,16 +7,16 @@ daphne==4.2.1
 # WebSocket support
 channels==4.1.0
 
-# Database (using older version for Python 3.13 compatibility)
+# Database
 dj-database-url==1.2.0
-psycopg2-binary==2.9.5
+psycopg2-binary==2.9.7
 
 # Static files serving
 whitenoise==6.5.0
 
-# Image processing (updated for Python 3.13 compatibility)
+# Image processing
 Pillow==10.4.0
 
-# Cloud storage (using available versions)
+# Cloud storage
 cloudinary==1.44.1
 django-cloudinary-storage==0.3.0
