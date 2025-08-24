@@ -204,6 +204,10 @@ from PIL import Image
 from io import BytesIO
 from django.core.files.base import ContentFile
 import sys
+from PIL import Image
+from io import BytesIO
+from django.core.files.uploadedfile import InMemoryUploadedFile
+import sys
 
 @login_required
 def create_post(request):
@@ -212,48 +216,45 @@ def create_post(request):
         if form.is_valid():
             post = form.save(commit=False)
             post.user = request.user
-
-            # ✨ 2. Start Image Compression Logic
+            
+            # Image compression logic (only if absolutely necessary)
             image_field = form.cleaned_data.get('image')
-            if image_field:
-                # Check if the image size is greater than 2 MB (2 * 1024 * 1024 bytes)
-                if image_field.size > 2 * 1024 * 1024:
-                    
-                    # Target size is 1 MB
-                    target_size_kb = 1024 
-                    
-                    # Open the image using Pillow
-                    img = Image.open(image_field)
-                    
-                    # If the image is RGBA (has transparency), convert it to RGB
-                    if img.mode == 'RGBA':
-                        img = img.convert('RGB')
-                        
-                    output_buffer = BytesIO()
-                    
-                    # Start with a high quality and decrease it until the file size is below the target
-                    quality = 85 # Initial quality
-                    
-                    # This loop will try to save the image with decreasing quality
-                    # to get the file size under 1MB.
-                    while quality > 10:
-                        output_buffer.seek(0) # Rewind buffer
-                        img.save(output_buffer, format='JPEG', quality=quality, optimize=True)
-                        if output_buffer.tell() / 1024 < target_size_kb:
-                            break
-                        quality -= 5 # Decrease quality by 5
-
-                    # The buffer now contains the compressed image data.
-                    # We create a new Django ContentFile from the buffer's content.
-                    compressed_image = ContentFile(output_buffer.getvalue())
-                    
-                    # We need to save this new file to the post's image field.
-                    # We must provide a name for the new file. We can reuse the old one.
-                    post.image.save(image_field.name, compressed_image, save=False)
-
-            # ✨ 3. End of Image Compression Logic
-
-            post.save() # Now save the post instance with the (potentially compressed) image
+            if image_field and image_field.size > 2 * 1024 * 1024:  # > 2MB
+                
+                # Open and compress the image
+                img = Image.open(image_field)
+                
+                if img.mode == 'RGBA':
+                    img = img.convert('RGB')
+                
+                output_buffer = BytesIO()
+                quality = 85
+                target_size_kb = 1024
+                
+                while quality > 10:
+                    output_buffer.seek(0)
+                    output_buffer.truncate(0)
+                    img.save(output_buffer, format='JPEG', quality=quality, optimize=True)
+                    if output_buffer.tell() / 1024 < target_size_kb:
+                        break
+                    quality -= 5
+                
+                output_buffer.seek(0)
+                
+                # Create a new InMemoryUploadedFile
+                compressed_image = InMemoryUploadedFile(
+                    output_buffer,
+                    'ImageField',
+                    f"{image_field.name.split('.')[0]}.jpg",
+                    'image/jpeg',
+                    sys.getsizeof(output_buffer),
+                    None
+                )
+                
+                # Assign the compressed image to the post
+                post.image = compressed_image
+            
+            post.save()
             messages.success(request, "Post created successfully!")
             return redirect('feed:profile', user_id=request.user.id)
     else:
