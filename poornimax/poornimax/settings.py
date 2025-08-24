@@ -1,147 +1,158 @@
-from pathlib import Path
 import os
+from pathlib import Path
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-ll(dkrpdb5wrj+#(zvmhz=a9c*a84%$#!34ib$9ymj6o2i8tzh'
+SECRET_KEY = "django-insecure-xxxxxx"  # <-- put your real key here
 DEBUG = True
-ALLOWED_HOSTS = ['*']
 
-AUTH_USER_MODEL = 'accounts.User'  # Assuming 'accounts' is your app name
+ALLOWED_HOSTS = ["*"]
 
-
+# ------------------------
+# APPLICATIONS
+# ------------------------
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'daphne',  # Move daphne here
-    'django.contrib.staticfiles',
-    'poornima_site',
-    'accounts',
-    'feed',
-    'chat',
-    'django.contrib.humanize',
-    'channels',
-]
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
 
+    # Third-party
+    "cloudinary",
+    "cloudinary_storage",
+
+    # Your apps
+    "feed",
+    "chat",
+]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Make sure whitenoise is installed
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # for static files
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'poornimax.urls'
+ROOT_URLCONF = "PoornimaX.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            BASE_DIR / 'templates',
-        ],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'poornimax.wsgi.application'
+WSGI_APPLICATION = "PoornimaX.wsgi.application"
 
-# Restored original database configuration
+
+# ------------------------
+# DATABASE
+# ------------------------
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "poornimax_db",
+        "USER": "postgres",
+        "PASSWORD": "yourpassword",
+        "HOST": "localhost",
+        "PORT": "5432",
     }
 }
 
-# Commenting out the dj_database_url configuration
-# import dj_database_url
-# DATABASES = {
-#     'default': dj_database_url.config(
-#         default='sqlite:///db.sqlite3',  # fallback
-#         conn_max_age=600,
-#         conn_health_checks=True,
-#     )
-# }
-
-
+# ------------------------
+# PASSWORDS
+# ------------------------
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+# ------------------------
+# LANGUAGE & TIME
+# ------------------------
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = '/static/'
+# ------------------------
+# STATIC FILES
+# ------------------------
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
+# ------------------------
+# CLOUDINARY CONFIGURATION
+# ------------------------
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": "dhol8imhb",       # your cloudinary name
+    "API_KEY": "616112266455922",    # your API key
+    "API_SECRET": "LVW7RCMdSQzSFQHrP5di_K58p4w",  # your API secret
+}
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+cloudinary.config(
+    cloud_name=CLOUDINARY_STORAGE["CLOUD_NAME"],
+    api_key=CLOUDINARY_STORAGE["API_KEY"],
+    api_secret=CLOUDINARY_STORAGE["API_SECRET"],
+    secure=True,
+)
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'sonivanshmaster@gmail.com'
-EMAIL_HOST_PASSWORD = 'geid mgxd obrn mubh'
-DEFAULT_FROM_EMAIL = 'sonivanshmaster@gmail.com'
+# ------------------------
+# MEDIA FILES
+# ------------------------
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+MEDIA_URL = "/media/"
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# File upload size limits
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 
-from django.core.files import locks
-
-def dummy_lock(f, flags):
-    pass
-
-def dummy_unlock(f):
-    pass
-
-locks.lock = dummy_lock
-locks.unlock = dummy_unlock
-
-ASGI_APPLICATION = 'poornimax.asgi.application'
-
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+# ------------------------
+# LOGGING
+# ------------------------
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {
+        "cloudinary": {"handlers": ["console"], "level": "DEBUG" if DEBUG else "INFO"},
+        "django": {"handlers": ["console"], "level": "INFO"},
     },
 }
 
-# Optional: You can comment this out if whitenoise is causing issues
-# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-# A simpler alternative:
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+# ------------------------
+# DEFAULTS
+# ------------------------
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+LOGIN_REDIRECT_URL = "/feed/"
 
-# Add this line to ensure static files are properly collected
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
+# ------------------------
+# CSRF SETTINGS
+# ------------------------
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.render.com",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
