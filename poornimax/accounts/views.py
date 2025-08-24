@@ -37,25 +37,26 @@ def signup_access(request):
     if request.method == 'POST':
         data = request.POST
         profile_picture = request.FILES.get('profile_picture')
-
         email = data.get('college_email')
+        
+        # Validation checks
         if not email.endswith('@poornima.org'):
             messages.error(request, "Use only your college email (@poornima.org).")
             return redirect('accounts:load_signup')
-
+        
         if User.objects.filter(username=data['username']).exists():
             messages.error(request, 'Username already taken.')
             return redirect('accounts:load_signup')
-
+        
         if User.objects.filter(college_email=email).exists():
             messages.error(request, 'Email already registered.')
             return redirect('accounts:load_signup')
-
+        
         if data['password'] != data['confirm_password']:
             messages.error(request, 'Passwords do not match.')
             return redirect('accounts:load_signup')
-
-        # Use create_user to handle password hashing
+        
+        # Create user with all fields including profile_picture
         user = User.objects.create_user(
             full_name=data['full_name'],
             college_email=email,
@@ -65,20 +66,13 @@ def signup_access(request):
             college=data['college'],
             department=data['department'],
             gender=data['gender'],
-            bio=data['bio']
+            bio=data['bio'],
+            profile_picture=profile_picture  # Let Cloudinary handle this automatically
         )
-
-        if profile_picture:
-            path = os.path.join(settings.MEDIA_ROOT, 'profile_pics', user.username)
-            os.makedirs(path, exist_ok=True)
-            fs = FileSystemStorage(location=path)
-            filename = fs.save(profile_picture.name, profile_picture)
-            user.profile_picture.name = f'profile_pics/{user.username}/{filename}'
-            user.save()
-
+        
         messages.success(request, "Account created! Now login with OTP.")
         return redirect('accounts:load_login')
-
+    
     return render(request, 'accounts/signup.html')
 
 # accounts/views.py
