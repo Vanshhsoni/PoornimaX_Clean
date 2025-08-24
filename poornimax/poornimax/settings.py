@@ -45,6 +45,46 @@ ROOT_URLCONF = 'poornimax.urls'
 WSGI_APPLICATION = 'poornimax.wsgi.application'
 ASGI_APPLICATION = 'poornimax.asgi.application'
 
+ROOT_URLCONF = 'poornimax.urls'
+WSGI_APPLICATION = 'poornimax.wsgi.application'
+ASGI_APPLICATION = 'poornimax.asgi.application'
+
+# Templates (add this)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],  # your project-level templates
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',  # needed by admin
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+# Database
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+
 # Database
 DATABASE_URL = os.getenv('DATABASE_URL')
 if DATABASE_URL:
