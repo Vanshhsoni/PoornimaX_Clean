@@ -17,6 +17,6 @@ whitenoise==6.5.0
 # Image processing (updated for Python 3.13 compatibility)
 Pillow==10.4.0
 
-# Cloud storage (using available version)
+# Cloud storage (using available versions)
 cloudinary==1.44.1
-django-cloudinary-storage==0.4.0
+django-cloudinary-storage==0.3.0
