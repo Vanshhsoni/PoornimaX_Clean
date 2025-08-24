@@ -1,0 +1,268 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PoornimaX - Your Friends</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        /* --- "BLUEEEE" THEME & DETAILED CARDS BY GEMINI --- */
+
+        :root {
+            /* Blue-centric Palette */
+            --primary: #3b82f6;      
+            --primary-light: #60a5fa;
+            --primary-dark: #2563eb;
+            --secondary: #22d3ee;  /* A vibrant cyan for call-to-action */
+            --bg: #f0f5ff;         /* A very light, cool blue background */
+            --bg-card: #ffffff;      
+            --text: #1e293b;          
+            --text-light: #64748b;    
+            --border: #e2e8f0;        
+            --shadow: rgba(59, 130, 246, 0.08);
+            --shadow-strong: rgba(59, 130, 246, 0.16);
+            --radius: 16px;          
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            padding-bottom: 80px; 
+        }
+
+        a { text-decoration: none; color: inherit; }
+
+        /* 1. LOADER & "BLUEEEE" FLUID BACKGROUND */
+        .loader-container {
+            position: fixed; inset: 0;
+            background-color: var(--bg);
+            display: grid; place-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+        }
+        .loader { display: flex; gap: 8px; }
+        .loader div { width: 12px; height: 12px; border-radius: 50%; background-color: var(--primary); animation: pulse 1.4s ease-in-out infinite both; }
+        .loader div:nth-child(1) { animation-delay: -0.32s; }
+        .loader div:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes pulse { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; } 40% { transform: scale(1.0); opacity: 1; } }
+        
+        .background-blobs { position: fixed; inset: 0; z-index: -1; overflow: hidden; }
+        .blob { position: absolute; border-radius: 50%; opacity: 0.5; filter: blur(120px); animation: drift 50s infinite linear alternate; }
+        .blob.blue-1 { background: #dbeafe; } /* Tailwind blue-100 */
+        .blob.blue-2 { background: #bfdbfe; animation-duration: 60s; } /* Tailwind blue-200 */
+        .blob.blue-3 { background: #93c5fd; animation-duration: 40s; } /* Tailwind blue-300 */
+        .blob:nth-of-type(1) { width: 500px; height: 500px; top: -20%; left: -25%; }
+        .blob:nth-of-type(2) { width: 450px; height: 450px; bottom: -20%; right: -25%; animation-direction: alternate-reverse; }
+        .blob:nth-of-type(3) { width: 400px; height: 400px; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+        @keyframes drift { from { transform: rotate(0deg) scale(1.2); } to { transform: rotate(360deg) translateX(50px) translateY(-50px) scale(1.5); } }
+
+        /* 2. LAYOUT & HEADER */
+        .content-wrapper { max-width: 900px; margin: 0 auto; padding: 20px; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        header h2 {
+            background: linear-gradient(45deg, var(--primary-dark), var(--primary-light));
+            background-clip: text; -webkit-background-clip: text; color: transparent;
+            font-size: clamp(1.5rem, 5vw, 2rem); font-weight: 700;
+        }
+        header .profile-avatar img {
+            width: 45px; height: 45px; border-radius: 50%; object-fit: cover;
+            border: 2px solid var(--primary); transition: var(--transition);
+        }
+        header .profile-avatar img:hover { transform: scale(1.1); box-shadow: 0 0 15px var(--primary-light); }
+        
+        .page-header { margin-bottom: 30px; }
+        .page-header h1 { font-size: clamp(1.75rem, 6vw, 2.5rem); color: var(--text); margin-bottom: 8px; }
+        .page-header p { color: var(--text-light); font-size: 1rem; }
+
+        /* 3. DETAILED FRIEND CARDS */
+        .friends-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* A single column for a cleaner list view */
+            gap: 20px;
+        }
+        .friend-card {
+            background: var(--bg-card); border-radius: var(--radius);
+            box-shadow: 0 4px 20px var(--shadow); border: 1px solid var(--border);
+            display: flex; align-items: center;
+            padding: 20px;
+            position: relative; overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            /* Cascading entry animation */
+            opacity: 0; transform: translateY(20px);
+            animation: cardFadeIn 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+            animation-delay: calc(var(--i) * 80ms + 300ms);
+        }
+        @keyframes cardFadeIn { to { opacity: 1; transform: translateY(0); } }
+        
+        .friend-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px var(--shadow-strong); }
+        
+        /* Interactive fluid effect on card */
+        .friend-card::before {
+            content: ''; position: absolute;
+            top: var(--y, 0); left: var(--x, 0);
+            transform: translate(-50%, -50%);
+            width: 150%; padding-bottom: 150%;
+            background: radial-gradient(circle, hsla(217, 89%, 70%, 0.15), transparent 50%);
+            border-radius: 50%; opacity: 0;
+            transition: opacity 0.5s ease; pointer-events: none;
+        }
+        .friend-card:hover::before { opacity: 1; }
+
+        /* Link wraps avatar and info */
+        .card-link { display: flex; align-items: center; gap: 20px; flex-grow: 1; }
+        .card-link .avatar img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
+        .card-link .info h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 8px; }
+        .card-link .info p { font-size: 0.9rem; color: var(--text-light); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .card-link .info p i { width: 14px; text-align: center; color: var(--primary-light); }
+        
+        /* Message button is separate */
+        .message-btn {
+            flex-shrink: 0;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--secondary), var(--primary-light));
+            color: white;
+            display: grid; place-items: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(34, 211, 238, 0.2);
+            transition: var(--transition);
+        }
+        .message-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(34, 211, 238, 0.4); }
+
+        /* 4. EMPTY STATE & FOOTER */
+        .empty-state { text-align: center; padding: 60px 20px; background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); }
+        .empty-state i { font-size: 3rem; color: var(--border); margin-bottom: 20px; }
+        .empty-state h3 { font-size: 1.25rem; margin-bottom: 10px; }
+        .empty-state p { color: var(--text-light); max-width: 350px; margin: 0 auto; line-height: 1.6; }
+        .footer { text-align: center; padding: 30px 20px 20px; font-size: 0.9rem; color: var(--text-light); font-weight: 600; letter-spacing: 3px; }
+
+        /* Bottom Navigation */
+        nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; justify-content: space-around; box-shadow: 0 -2px 15px var(--shadow); z-index: 100; }
+        nav a { color: var(--text-light); padding: 15px; transition: var(--transition); position: relative; }
+        nav a i { font-size: 22px; transition: var(--transition); }
+        nav a:hover { color: var(--text); }
+        nav a.active-link { color: var(--primary); }
+        nav a.active-link::after { content: ''; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 24px; height: 4px; background: var(--primary); border-radius: 2px; }
+
+        /* 6. RESPONSIVE DESIGN */
+        @media (max-width: 768px) {
+            .content-wrapper { padding: 15px; }
+            .friend-card { flex-direction: column; align-items: flex-start; }
+            .message-btn { position: absolute; top: 16px; right: 16px; width: 44px; height: 44px; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loader-container" id="loaderContainer">
+        <div class="loader"><div></div><div></div><div></div></div>
+    </div>
+    
+    <div class="background-blobs">
+        <div class="blob blue-1"></div>
+        <div class="blob blue-2"></div>
+        <div class="blob blue-3"></div>
+    </div>
+    
+    <div class="content-wrapper">
+        <header>
+            <h2>PoornimaX</h2>
+            <a href="{% url 'feed:profile' user_id=user.id %}" class="profile-avatar">
+                <img src="{{ user.profile_picture.url }}" alt="Your Profile">
+            </a>
+        </header>
+    
+        <section class="page-header">
+            <h1>Your Friends</h1>
+            <p>People you've successfully connected with.</p>
+        </section>
+        
+        <main class="friends-grid">
+            {% if friends %}
+            {% for entry in friends %}
+            <div class="friend-card" style="--i: {{ forloop.counter0 }};">
+                <a href="{% url 'feed:profile' user_id=entry.id %}" class="card-link">
+                    <div class="avatar">
+                        <img src="{{ entry.profile_picture.url }}" alt="Profile of {{ entry.full_name }}">
+                    </div>
+                    <div class="info">
+                        <h3>{{ entry.full_name }}</h3>
+                        <p><i class="fas fa-graduation-cap"></i> {{ entry.department }} • {% if entry.questionnaire %}{{ entry.questionnaire.year }}{% else %}Student{% endif %}</p>
+                        <p><i class="fas fa-university"></i> {{ entry.college }}</p>
+                        <p><i class="fas fa-calendar-check"></i> Friends since {{ entry.friendship_since|date:"M d, Y" }}</p>
+                    </div>
+                </a>
+                <a href="{% url 'chat:chat_with_user' entry.username %}" class="message-btn" aria-label="Message {{ entry.full_name }}">
+                    <i class="fas fa-comment-dots"></i>
+                </a>
+            </div>
+        {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="far fa-user-circle"></i>
+                    <h3>No Friends Yet</h3>
+                    <p>When you and another person both send hearts to each other, you'll become friends and they will appear here.</p>
+                </div>
+            {% endif %}
+        </main>
+    </div>
+ 
+<nav>
+    <a href="{% url 'feed:home' %}"><i class="fas fa-home"></i></a>
+    <a href="{% url 'feed:explore' %}"><i class="fas fa-compass"></i></a>
+    <a href="{% url 'feed:create_post' %}"><i class="fas fa-plus-circle"></i></a>
+    <a href="{% url 'feed:friends_list' %}" class="active-link"><i class="fas fa-user-friends"></i></a>
+    <a href="{% url 'chat:inbox' %}" ><i class="fas fa-comment"></i></a>
+</nav>
+ 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loader = document.getElementById('loaderContainer');
+            if (loader) {
+                setTimeout(() => {
+                    loader.style.opacity = '0';
+                    loader.addEventListener('transitionend', () => loader.style.visibility = 'hidden', { once: true });
+                }, 300);
+            }
+
+            const cards = document.querySelectorAll('.friend-card');
+            cards.forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    card.style.setProperty('--x', `${e.clientX - rect.left}px`);
+                    card.style.setProperty('--y', `${e.clientY - rect.top}px`);
+                });
+            });
+
+            const navLinks = document.querySelectorAll('nav a');
+            const currentPath = window.location.pathname;
+            navLinks.forEach(link => {
+                const linkPath = new URL(link.href, window.location.origin).pathname;
+                if (currentPath === linkPath) {
+                    link.classList.add('active-link');
+                } else {
+                    link.classList.remove('active-link');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
