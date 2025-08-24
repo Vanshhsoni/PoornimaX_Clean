@@ -750,6 +750,7 @@ def lazy_load_posts(request):
     """
     print(f"DEBUG: lazy_load_posts called with method: {request.method}")
     print(f"DEBUG: GET parameters: {request.GET}")
+    print(f"DEBUG: Current user: {request.user.id} ({request.user.username})")
     
     if request.method != 'GET':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -805,8 +806,14 @@ def lazy_load_posts(request):
         
         # Format posts data for frontend
         posts_data = []
+        current_user = request.user  # Store current user for comparison
+        
         for post in posts_page:
             try:
+                # Check if this post belongs to the current user
+                is_current_user_post = post.user == current_user
+                print(f"DEBUG: Post {post.id} - User: {post.user.id} ({post.user.username}), Is current user: {is_current_user_post}")
+                
                 post_data = {
                     'id': post.id,
                     'image': post.image.url if post.image else '',
@@ -817,6 +824,7 @@ def lazy_load_posts(request):
                         'username': post.user.username,
                         'full_name': post.user.full_name or post.user.username,
                         'profile_picture': post.user.profile_picture.url if post.user.profile_picture else DEFAULT_AVATAR_URL,
+                        'is_current_user': is_current_user_post  # THIS IS THE MISSING LINE!
                     },
                     'created_at': post.created_at.isoformat(),
                 }
@@ -834,7 +842,8 @@ def lazy_load_posts(request):
                 'page': page_number,
                 'posts_in_page': len(posts_data),
                 'total_pages': paginator.num_pages,
-                'has_next': posts_page.has_next()
+                'has_next': posts_page.has_next(),
+                'current_user_id': current_user.id
             }
         }
         
