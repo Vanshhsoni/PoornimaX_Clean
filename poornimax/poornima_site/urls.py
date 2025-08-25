@@ -1,6 +1,8 @@
 from django.urls import path
-from . import views
+from . import views  # current app ke views
+from accounts import views as account_views  # accounts app ke views
 
 urlpatterns = [
-    path('', views.home, name='home'),  # main homepage
+    # Home page ko accounts ka login_signup bana do
+    path('', account_views.login_signup, name='home'),
 ]
