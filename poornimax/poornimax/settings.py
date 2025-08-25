@@ -4,7 +4,7 @@ import dj_database_url
 import cloudinary
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+LOGIN_URL = '/accounts/signup/'
 # Security
 SECRET_KEY = 'django-insecure-ll(dkrpdb5wrj+#(zvmhz=a9c*a84%$#!34ib$9ymj6o2i8tzh'
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
