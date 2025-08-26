@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'channels',
     'cloudinary_storage',
     'cloudinary',
+    'django.contrib.sitemaps'
 ]
 
 MIDDLEWARE = [
