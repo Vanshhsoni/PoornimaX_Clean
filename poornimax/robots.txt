@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /accounts/
+Disallow: /feed/
+Disallow: /chat/
+Allow: /
+
+Sitemap: https://poornimax.onrender.com/sitemap.xml
