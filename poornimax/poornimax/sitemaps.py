@@ -9,9 +9,8 @@ class StaticSitemap(Sitemap):
     def items(self):
         # yahan apne url "name" dalne hain (not paths)
         return [
-            "home",            # poornima_site.urls → home view
-            "login_signup",    # accounts.urls → signup page
-            "load_login",      # accounts.urls → login page
+            "feed:home",              # accounts.urls → signup page
+
         ]
 
     def location(self, item):
