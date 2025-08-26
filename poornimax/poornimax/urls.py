@@ -13,7 +13,7 @@ urlpatterns = [
 
     # 👇 Google verification file (replace filename with your actual one)
     path(
-        "google123456789abc.html",  
-        TemplateView.as_view(template_name="google123456789abc.html")
+        "google34a777b06ccf7e67.html",  
+        TemplateView.as_view(template_name="google34a777b06ccf7e67.html")
     ),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
