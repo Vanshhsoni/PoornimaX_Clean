@@ -8,7 +8,10 @@ from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 from .sitemaps import StaticSitemap
 
-from django.views.generic import TemplateView
+# 👇 define sitemaps dict
+sitemaps = {
+    "static": StaticSitemap,
+}
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -17,7 +20,7 @@ urlpatterns = [
     path('', include('poornima_site.urls')),
     path('accounts/', include('accounts.urls')),
     path('feed/', include('feed.urls')),
-    path('chat/', include('chat.urls', namespace='chat')),
+    path('chat/', include(('chat.urls', 'chat'), namespace='chat')),
 
     # Google verification file
     path(
