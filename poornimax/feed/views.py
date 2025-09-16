@@ -132,6 +132,7 @@ def home(request):
         'friends': Crush.objects.filter(sender=current_user, is_mutual=True).count(),
     }
     return render(request, 'feed/home.html', context)
+from django.db.models import Q
 
 @login_required
 def profile(request, user_id):
@@ -139,23 +140,28 @@ def profile(request, user_id):
     Renders a user's profile page, handling post visibility based on friendship.
     """
     profile_user = get_object_or_404(User, id=user_id)
-    
+
     if request.user != profile_user:
         ProfileView.objects.get_or_create(viewer=request.user, viewed=profile_user)
 
-    is_mutual = Crush.objects.filter(sender=request.user, receiver=profile_user, is_mutual=True).exists()
+    # ✅ Mutual check (both directions)
+    is_mutual = Crush.objects.filter(
+        Q(sender=request.user, receiver=profile_user) |
+        Q(sender=profile_user, receiver=request.user),
+        is_mutual=True
+    ).exists()
 
-    # REVISED: Post visibility logic
+    # ✅ Post visibility logic
     if request.user == profile_user or is_mutual:
-        posts_qs = Post.objects.filter(user=profile_user) # View all posts
+        posts_qs = Post.objects.filter(user=profile_user)  # View all posts
     else:
-        posts_qs = Post.objects.filter(user=profile_user, is_public=True) # View only public posts
+        posts_qs = Post.objects.filter(user=profile_user, is_public=True)  # View only public posts
 
     posts = posts_qs.annotate(
         likes_count=Count('likes', distinct=True),
         comments_count=Count('comments', distinct=True)
     ).order_by('-created_at')
-    
+
     context = {
         'profile_user': profile_user,
         'sent_crush': Crush.objects.filter(sender=request.user, receiver=profile_user).exists(),
@@ -165,7 +171,7 @@ def profile(request, user_id):
         'compatibility_score': calculate_compatibility(request.user, profile_user) if request.user != profile_user else None,
     }
     return render(request, 'feed/profile.html', context)
-
+    
 @login_required
 def all_users(request):
     """Renders a page with all other users, sorted by compatibility score."""
