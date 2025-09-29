@@ -139,7 +139,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'sonivanshmaster@gmail.com'
-EMAIL_HOST_PASSWORD = 'geid mgxd obrn mubh'
+EMAIL_HOST_PASSWORD = 'mwtz lmiw rwuk ubkg'
 DEFAULT_FROM_EMAIL = 'sonivanshmaster@gmail.com'
 
 # Channels
