@@ -70,8 +70,8 @@ class User(AbstractUser):
     has_answered_questionnaire = models.BooleanField(default=False)
     is_profile_locked = models.BooleanField(default=True, help_text="If true, profile is not publicly visible.")
 
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['college_email', 'full_name', 'dob', 'college', 'department', 'gender']
+    USERNAME_FIELD = 'college_email'
+    REQUIRED_FIELDS = ['username', 'full_name', 'dob', 'college', 'department', 'gender']
 
     class Meta:
         verbose_name = "User"
